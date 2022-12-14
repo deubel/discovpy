@@ -3,6 +3,7 @@ import json
 import sys
 import random
 import time
+import os
 
 args = sys.argv[1:]
 token = args[0]
@@ -61,6 +62,15 @@ def generate(markov):
     return result
 
 
+def write_data_file(user_id):
+    if not os.path.exists("tmp"):
+        os.mkdir("tmp")
+    write_path = f"tmp/markovs_{user_id}.json"
+    with open(write_path, "w", encoding='utf-8') as write_file:
+        json.dump(markovs[user_id], write_file, indent=3)
+    return write_path
+
+
 class DiscovClient(disnake.Client):
     def __init__(self, **options):
         super().__init__(**options)
@@ -93,13 +103,22 @@ class DiscovClient(disnake.Client):
         elif author_id != self_id:
             if content.startswith("!markov purge"):
                 del markovs[author_id]
-            user_id = str(message.mentions[0].id) if message.mentions else self_id
-            if user_id in markovs:
-                markov = markovs[user_id]
-                if markov:
-                    generated = generate(markov)
-                    if generated:
-                        await message.channel.send(generated)
+            elif content.startswith("!markov data"):
+                author = message.author
+                read_path = write_data_file(author_id)
+                with open(read_path, "r", encoding='utf-8') as read_file:
+                    await author.create_dm()
+                    await author.dm_channel.send(f'Hi {author.name}, here is everything I know about you. If you\'d '
+                                                 f'like me to forget, just use the \'!markov purge\' command in a '
+                                                 f'server I\'m in.', file=disnake.File(read_file))
+            else:
+                user_id = str(message.mentions[0].id) if message.mentions else self_id
+                if user_id in markovs:
+                    markov = markovs[user_id]
+                    if markov:
+                        generated = generate(markov)
+                        if generated:
+                            await message.channel.send(generated)
 
 
 client = DiscovClient(intents=disnake.Intents.all())
