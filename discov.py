@@ -123,5 +123,6 @@ class DiscovClient(disnake.Client):
                             await message.channel.send(generated)
 
 
-client = DiscovClient(intents=disnake.Intents.all())
+client = DiscovClient(intents=disnake.Intents.all(),
+                      activity=disnake.Activity(name='you', type=disnake.ActivityType.watching))
 client.run(token)
