@@ -109,9 +109,10 @@ class DiscovClient(disnake.Client):
                 read_path = write_data_file(author_id)
                 with open(read_path, "r", encoding='utf-8') as read_file:
                     await author.create_dm()
-                    await author.dm_channel.send(f'Hi {author.name}, here is everything I know about you. If you\'d '
-                                                 f'like me to forget, just use the `!markov purge` command in a '
-                                                 f'server I\'m in.', file=disnake.File(read_file))
+                    await author.dm_channel.send(
+                        f'Hi {author.name}, here is everything I know about you. If you\'d like me to forget, '
+                        f'just use the `!markov purge` command here or in a server I\'m in.',
+                        file=disnake.File(read_file))
                     await message.add_reaction('👍')
             else:
                 user_id = str(message.mentions[0].id) if message.mentions else self_id
