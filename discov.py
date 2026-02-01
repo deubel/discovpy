@@ -82,45 +82,47 @@ class DiscovClient(disnake.Client):
         content = message.content
         if not self.user.mentioned_in(message):
             if author_id != self_id:
-                if author_id not in markovs:
-                    markovs[author_id] = dict()
-                if self_id not in markovs:
-                    markovs[self_id] = dict()
-                formatted = content + end_suffix
-                print(f"Adding phrase \"{content}\" to {message.author.name} ({author_id})")
-                add_phrase(markovs[author_id], formatted)
-                print(f"Adding phrase \"{content}\" to self")
-                add_phrase(markovs[self_id], formatted)
-
-                if time.time() - self.last_save > 900:
-                    print(f"Saving")
-                    with open(file, 'w', encoding='utf-8') as output_file:
-                        json.dump(markovs, output_file)
-                        self.last_save = time.time()
-                        output_file.close()
-        elif author_id != self_id:
-            if content.startswith("!discov purge"):
-                del markovs[author_id]
-                await message.add_reaction('👍')
-            elif content.startswith("!discov data"):
-                author = message.author
-                read_path = write_data_file(author_id)
-                with open(read_path, "r", encoding='utf-8') as read_file:
-                    await author.create_dm()
-                    await author.dm_channel.send(
-                        f'Hi {author.name}, here is everything I know about you. If you\'d like me to forget, '
-                        f'just use the `!discov purge` command here or in a server I\'m in.',
-                        file=disnake.File(read_file))
+                if content.startswith("!discov purge"):
+                    print(f"Purging {message.author.name} ({author_id})")
+                    del markovs[author_id]
                     await message.add_reaction('👍')
-            else:
-                mention = list(filter(lambda m: m.id != self_id, message.mentions))[0]
-                user_id = str(mention.id) if mention else self_id
-                if user_id in markovs:
-                    markov = markovs[user_id]
-                    if markov:
-                        generated = generate(markov)
-                        if generated:
-                            await message.channel.send(generated)
+                elif content.startswith("!discov data"):
+                    author = message.author
+                    print(f"Sending data for {author.name} ({author_id})")
+                    read_path = write_data_file(author_id)
+                    with open(read_path, "r", encoding='utf-8') as read_file:
+                        await author.create_dm()
+                        await author.dm_channel.send(
+                            f'Hi {author.name}, here is everything I know about you. If you\'d like me to forget, '
+                            f'just use the `!discov purge` command here or in a server I\'m in.',
+                            file=disnake.File(read_file))
+                        await message.add_reaction('👍')
+                else:
+                    if author_id not in markovs:
+                        markovs[author_id] = dict()
+                    if self_id not in markovs:
+                        markovs[self_id] = dict()
+                    formatted = content + end_suffix
+                    print(f"Adding phrase \"{content}\" to {message.author.name} ({author_id})")
+                    add_phrase(markovs[author_id], formatted)
+                    print(f"Adding phrase \"{content}\" to self")
+                    add_phrase(markovs[self_id], formatted)
+
+                    if time.time() - self.last_save > 900:
+                        print(f"Saving")
+                        with open(file, 'w', encoding='utf-8') as output_file:
+                            json.dump(markovs, output_file)
+                            self.last_save = time.time()
+                            output_file.close()
+        elif author_id != self_id:
+            mention = list(filter(lambda m: m.id != self_id, message.mentions))[0]
+            user_id = str(mention.id) if mention else self_id
+            if user_id in markovs:
+                markov = markovs[user_id]
+                if markov:
+                    generated = generate(markov)
+                    if generated:
+                        await message.channel.send(generated)
 
 
 client = DiscovClient(intents=disnake.Intents.all())
